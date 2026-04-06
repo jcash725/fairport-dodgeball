@@ -387,7 +387,7 @@ section { padding: 80px 20px; }
 
 .offerings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 25px;
 }
 
@@ -852,7 +852,7 @@ footer p {
   .stat-label { font-size: 0.7rem; }
 
   /* Offerings */
-  .offerings-grid { grid-template-columns: 1fr; gap: 10px; }
+  .offerings-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .offering-card { padding: 16px 12px; }
   .offering-icon { font-size: 1.8rem; margin-bottom: 8px; }
   .offering-card h3 { font-size: 1.15rem; }
@@ -1077,9 +1077,8 @@ footer p {
   <div class="container">
     <div class="section-title">GET <span>NOTIFIED</span></div>
     <p class="section-subtitle">Be the first to know when we open. Reserve your spot at Rochester's premier dodgeball destination.</p>
-    <form class="interest-form" action="https://formsubmit.co/jomama10287@gmail.com" method="POST">
+    <form class="interest-form" action="https://formsubmit.co/fairport.dodgeball@gmail.com" method="POST" onsubmit="return handleFormSubmit(event)">
       <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_next" value="https://fairport-dodgeball.vercel.app/?submitted=true">
       <input type="hidden" name="_subject" value="New Fairport Dodgeball Interest Form Submission">
       <input type="hidden" name="_honey" style="display:none">
       <input type="hidden" name="_template" value="table">
@@ -1178,34 +1177,97 @@ document.querySelectorAll('input[name="interest"]').forEach(cb => {
   });
 });
 
-// Check for form submission success on page load
-document.addEventListener('DOMContentLoaded', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('submitted') === 'true') {
-    // Remove the query parameter from URL
-    const url = new URL(window.location);
-    url.searchParams.delete('submitted');
-    window.history.replaceState({}, document.title, url);
+// Handle form submission
+function handleFormSubmit(event) {
+  event.preventDefault(); // Prevent normal form submission
 
-    // Scroll to form section
-    document.querySelector('#signup').scrollIntoView({ behavior: 'smooth' });
+  const form = event.target;
+  const btn = form.querySelector('.btn-submit');
+  const formData = new FormData(form);
 
-    // Show success message
-    const formSection = document.querySelector('.form-section .container');
-    const successMessage = document.createElement('div');
-    successMessage.innerHTML = "Thanks for signing up! We'll keep you posted on our opening.";
-    successMessage.style.cssText = `
+  btn.textContent = "SUBMITTING...";
+  btn.disabled = true;
+
+  // Create hidden iframe for submission
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  iframe.name = 'hiddenSubmit';
+  document.body.appendChild(iframe);
+
+  // Create a new form to submit to iframe
+  const hiddenForm = document.createElement('form');
+  hiddenForm.action = form.action;
+  hiddenForm.method = form.method;
+  hiddenForm.target = 'hiddenSubmit';
+  hiddenForm.style.display = 'none';
+
+  // Copy form data to hidden form
+  for (let [key, value] of formData.entries()) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    hiddenForm.appendChild(input);
+  }
+
+  // Add to page, submit, then clean up
+  document.body.appendChild(hiddenForm);
+  hiddenForm.submit();
+
+  // Show success message after brief delay
+  setTimeout(() => {
+    showSuccessMessage();
+    form.reset();
+    // Clean up
+    if (document.body.contains(hiddenForm)) {
+      document.body.removeChild(hiddenForm);
+    }
+    if (document.body.contains(iframe)) {
+      document.body.removeChild(iframe);
+    }
+  }, 1500);
+
+  return false;
+}
+
+// Show simple success message
+function showSuccessMessage() {
+  const form = document.querySelector('.interest-form');
+  const message = document.createElement('div');
+  message.innerHTML = `
+    <div style="
       background: #28a745;
       color: white;
-      padding: 15px;
+      padding: 15px 20px;
       border-radius: 8px;
       margin-bottom: 20px;
       text-align: center;
       font-weight: 600;
-    `;
-    formSection.insertBefore(successMessage, document.querySelector('.interest-form'));
-  }
-});
+    ">
+      ✓ Thanks for signing up! We'll keep you posted on our opening.
+    </div>
+  `;
+
+  // Insert message before the form
+  form.parentNode.insertBefore(message, form);
+
+  // Scroll to the signup section (with some extra space above)
+  const signupSection = document.querySelector('#signup');
+  signupSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Remove message after 8 seconds
+  setTimeout(() => {
+    if (message.parentNode) {
+      message.remove();
+    }
+  }, 8000);
+
+  // Reset form button
+  const btn = document.querySelector('.btn-submit');
+  btn.textContent = "Count Me In";
+  btn.disabled = false;
+  btn.style.background = '';
+}
 
 // Smooth scroll for nav + close mobile menu on click
 document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
